@@ -1,0 +1,4 @@
+/detector/setup Veto
+/run/initialize
+
+/control/execute seed_10.mac

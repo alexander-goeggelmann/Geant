@@ -1,0 +1,9 @@
+/control/alias xSeed 30
+/control/alias ySeed 30
+
+
+/random/setSeeds {xSeed} {ySeed}
+/seed/x {xSeed}
+/seed/y {ySeed}
+
+/control/execute set_primary.mac

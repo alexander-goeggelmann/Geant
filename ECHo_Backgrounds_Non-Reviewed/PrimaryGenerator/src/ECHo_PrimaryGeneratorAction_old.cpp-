@@ -1,0 +1,332 @@
+#include "../include/ECHo_PrimaryGeneratorAction.hh"
+#include "../include/ECHo_GeneratorMessenger.hh"
+#include "../../Detector/include/ECHo_DetectorConst.hh"
+#include "../../Detector/include/ECHo_DetectorMessenger.hh"
+
+#include <G4LogicalVolumeStore.hh>
+#include <G4LogicalVolume.hh>
+#include <G4Box.hh>
+#include <G4RunManager.hh>
+#include <G4ParticleGun.hh>
+#include <G4ParticleTable.hh>
+#include <G4ParticleDefinition.hh>
+#include <G4SystemOfUnits.hh>
+#include <Randomize.hh>
+#include <G4Tubs.hh>
+
+#include <TMath.h>
+#include <G4IonTable.hh>
+
+ECHo_PrimaryGeneratorAction::ECHo_PrimaryGeneratorAction(ECHo_DetectorConstruction* det)
+    : G4VUserPrimaryGeneratorAction(),
+    fParticleGun(0)
+{
+    // Initialization of the primary particle
+    fDetector = det;
+    // Place it at the origion (0, 0, 0)
+    position = origin;
+    halfLength = origin;
+    ionZ = 1;
+    ionA = 1;
+    // Contamination = true means a bulk contamination
+    // Contamination = false means a contamination at the surface
+    contamination = true;
+    muon = true;
+    fPrimMessenger = new ECHo_GeneratorMessenger(this);
+
+    fParticleGun  = new G4ParticleGun(1);
+    G4ParticleTable* ParticleTable = G4ParticleTable::GetParticleTable();
+    G4String particleName = "mu-";
+    G4ParticleDefinition* Particle = ParticleTable->FindParticle(particleName);
+    fParticleGun->SetParticleDefinition(Particle);
+    fParticleGun->SetParticleEnergy(0. * CLHEP::eV);
+}
+
+ECHo_PrimaryGeneratorAction::~ECHo_PrimaryGeneratorAction()
+{
+  delete fParticleGun;
+  delete fPrimMessenger;
+}
+
+G4double GetN(G4ThreeVector p, G4ThreeVector v, G4double r)
+{
+    G4double b =
+        v.getX() * p.getX() + v.getY() * p.getY() + v.getZ() * p.getZ();
+    G4double c =
+        (r * r -
+         (p.getX() * p.getX() + p.getY() * p.getY() + p.getZ() * p.getZ()));
+    c /= 2.;
+    c /= v.getX() * v.getX() + v.getY() * v.getY() + v.getZ() * v.getZ();
+
+    return -b + TMath::Sqrt(4. * b * b - 2. * c);
+}
+
+void ECHo_PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
+{
+    // Generate the library
+    ECHo_DetectorConst& detector_const = get_DetectorConst();
+    detector_const.setVectors();
+
+    // Select a random velocity vector
+    G4double phi = CLHEP::twopi * G4UniformRand();
+    G4double theta = CLHEP::pi * G4UniformRand();
+    G4double vx = cos(phi) * sin(theta);
+    G4double vy = sin(phi) * sin(theta);
+    G4double vz = cos(theta);
+
+    // The origin of the selected volume
+    G4double x0 = position.getX();
+    G4double y0 = position.getY();
+    G4double z0 = position.getZ();
+    
+    if (muon)
+    {
+        if (vz > 0) vz *= -1;
+        G4double thisN = GetN(
+            G4ThreeVector(x0, y0, z0), G4ThreeVector(-vx, -vy, -vz), 5.1 * CLHEP::m);
+        x0 = x0 - thisN * vx;
+        y0 = y0 - thisN * vy;
+        z0 = z0 - thisN * vz;
+    }
+    else if (contamination)
+    {
+        // Bulk contamination
+        x0 += 2. * halfLength.getX() * (G4UniformRand() - 0.5);
+        y0 += 2. * halfLength.getY() * (G4UniformRand() - 0.5);
+        z0 += 2. * halfLength.getZ() * (G4UniformRand() - 0.5);
+    }
+    else
+    {
+        // Surface contamination
+        G4double total_area = (halfLength.getX() * halfLength.getY() +
+                               halfLength.getY() * halfLength.getZ() +
+                               halfLength.getX() * halfLength.getZ());
+        G4double random_area = G4UniformRand() * total_area;
+
+        if (random_area <= (halfLength.getX() * halfLength.getY()))
+        {
+            x0 += 2. * halfLength.getX() * (G4UniformRand() - 0.5);
+            y0 += 2. * halfLength.getY() * (G4UniformRand() - 0.5);
+            if (G4UniformRand() - 0.5 < 0.) z0 -= halfLength.getZ();
+            else z0 += halfLength.getZ();
+        }
+        else if (random_area <= ((halfLength.getX() * halfLength.getY()) +
+                                 (halfLength.getY() * halfLength.getZ())))
+        {
+            if (G4UniformRand() - 0.5 < 0.) x0 -= halfLength.getX();
+            else x0 += halfLength.getX();
+            y0 += 2. * halfLength.getY() * (G4UniformRand() - 0.5);
+            z0 += 2. * halfLength.getZ() * (G4UniformRand() - 0.5);
+        }
+        else
+        {
+            x0 += 2. * halfLength.getX() * (G4UniformRand() - 0.5);
+            if (G4UniformRand() - 0.5 < 0.) y0 -= halfLength.getY();
+            else y0 += halfLength.getY();
+            z0 += 2. * halfLength.getZ() * (G4UniformRand() - 0.5);
+        }
+    }
+
+    fParticleGun->SetParticlePosition(G4ThreeVector(x0,y0,z0));
+    fParticleGun->SetParticleMomentumDirection(G4ThreeVector(vx, vy, vz));
+
+    if (not muon)
+    {
+        G4ParticleDefinition *ion = G4IonTable::GetIonTable()->GetIon(ionZ, ionA, 0.);
+        fParticleGun->SetParticleDefinition(ion);
+        fParticleGun->SetParticleCharge(0.);
+    }
+    else
+    {
+        G4ParticleTable* ParticleTable = G4ParticleTable::GetParticleTable();
+        G4ParticleDefinition* Particle = ParticleTable->FindParticle("mu-");
+        fParticleGun->SetParticleDefinition(Particle);
+        fParticleGun->SetParticleEnergy(4. * CLHEP::GeV);
+    }
+
+    fParticleGun->GeneratePrimaryVertex(anEvent);
+}
+
+G4ThreeVector GetPositionMMC(G4String volume)
+{
+    if (volume == name_Sensor)
+    {
+        return position_SensorInMMC;
+    }
+    else if (volume == name_Absorber)
+    {
+        return position_AbsorberInMMC;
+    }
+    else if (volume == name_Holmium)
+    {
+        G4ThreeVector a = GetPositionMMC(name_Absorber);
+        G4ThreeVector b = position_HolmiumInAbsorber;
+        return G4ThreeVector(
+            a.getX() + b.getX(), a.getY() + b.getY(), a.getZ() + b.getZ());
+    }
+    else
+    {
+        return G4ThreeVector(0., 0., 0.);
+    }
+}
+
+G4ThreeVector GetPositionMuMUX(G4String volume)
+{
+    ECHo_DetectorConst& detector_const = get_DetectorConst();
+    detector_const.setVectors();
+
+    int num_in_name = number_of_pixels;
+    for (int i = 0; i < number_of_pixels; i++)
+    {
+        if (volume.contains(std::to_string(i)))
+        {
+            num_in_name = i;
+        }
+    }
+
+    if (volume == name_Wafer)
+    {
+        return position_WaferInMuMUX;
+    }
+    else if (volume == name_Bath)
+    {
+        return position_BathInMuMUX;
+    }
+    else if (volume == name_Source)
+    {
+        return position_SourceInMuMUX;
+    }
+    else if (num_in_name != number_of_pixels)
+    {
+        G4double x = detector_const.vector_position_x_MMCInMuMUX[num_in_name];
+        G4double y = detector_const.vector_position_y_MMCInMuMUX[num_in_name];
+        G4double z = detector_const.vector_position_z_MMCInMuMUX[num_in_name];
+
+        G4ThreeVector a = G4ThreeVector(0., 0., 0.);
+        if (volume.contains(name_MMC))
+        {}
+        else if (volume.contains(name_Absorber))
+        {
+            a = GetPositionMMC(name_Absorber);
+        }
+        else if (volume.contains(name_Sensor))
+        {
+            a = GetPositionMMC(name_Sensor);
+        }
+        else if (volume.contains(name_Holmium))
+        {
+            a = GetPositionMMC(name_Holmium);
+        }
+        else
+        {
+            x = 0.;
+            y = 0.;
+            z = 0.;
+        }
+        return G4ThreeVector(a.getX() + x, a.getY() + y, a.getZ() + z);
+    }
+    else
+    {
+        return G4ThreeVector(0., 0., 0.);
+    }
+}
+
+G4ThreeVector GetPositionSetUp(G4String volume)
+{
+    if (volume == name_SetUp)
+    {
+        return G4ThreeVector(0., 0., 0.);
+    }
+    else
+    {
+        G4ThreeVector a = GetPositionMuMUX(volume);
+        if ((a.getX() != 0.) or (a.getY() != 0.) or (a.getZ() != 0.) or
+            (volume == name_muMUX))
+        {
+            G4ThreeVector b = position_MuMUXInVeto;
+            return G4ThreeVector(
+                a.getX() + b.getX(), a.getY() + b.getY(), a.getZ() + b.getZ());
+        }
+        else
+        {
+            return a;
+        }
+    }
+}
+
+G4ThreeVector GetHalfLength(G4String volume)
+{
+    if (volume.contains(name_Sensor))
+    {
+        return G4ThreeVector(
+            x_half_Sensor, y_half_Sensor, z_half_Sensor);
+    }
+    else if (volume.contains(name_Absorber))
+    {
+        return G4ThreeVector(
+            x_half_Absorber, y_half_Absorber, z_half_Absorber);
+    }
+    else if (volume.contains(name_Holmium))
+    {
+        return G4ThreeVector(
+            x_half_Holmium, y_half_Holmium, z_half_Holmium);
+    }
+    else if (volume.contains(name_MMC))
+    {
+        return G4ThreeVector(
+            x_half_MMC, y_half_MMC, z_half_MMC);
+    }
+    else if (volume.contains(name_Wafer))
+    {
+        return G4ThreeVector(
+            x_half_Wafer, y_half_Wafer, z_half_Wafer);
+    }
+    else if (volume.contains(name_Bath))
+    {
+        return G4ThreeVector(
+            x_half_Bath, y_half_Bath, z_half_Bath);
+    }
+    else if (volume.contains(name_Source))
+    {
+        return G4ThreeVector(
+            x_half_Source, y_half_Source, z_half_Source);
+    }
+    else if (volume.contains(name_muMUX))
+    {
+        return G4ThreeVector(
+            x_half_muMUX, y_half_muMUX, z_half_muMUX);
+    }
+    else if (volume.contains(name_SetUp))
+    {
+        return G4ThreeVector(
+            x_half_Veto, y_half_Veto, z_half_Veto);
+    }
+    else
+    {
+        return G4ThreeVector(0., 0., 0.);
+    }
+}
+
+void ECHo_PrimaryGeneratorAction::SelectVolume(G4String volume)
+{
+    halfLength = GetHalfLength(volume);
+
+    if (GetSetUp() == c_MMC)
+    {
+        position = GetPositionMMC(volume);
+    }
+    else if (GetSetUp() == c_MuMUX)
+    {
+        position = GetPositionMuMUX(volume);
+    }
+    else if (GetSetUp() == c_Veto)
+    {
+        position = GetPositionSetUp(volume);
+    }
+}
+
+void ECHo_PrimaryGeneratorAction::SelectContamination(G4String con)
+{
+    contamination = (con == c_Bulk);
+}
+

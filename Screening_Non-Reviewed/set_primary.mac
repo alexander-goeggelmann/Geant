@@ -1,0 +1,28 @@
+# Debug modus
+/save/primary true
+
+# Contamination type
+/primary/muon true
+/primary/contamination Bulk
+
+# Position of the contamination
+/primary/volume Wafer
+
+# Isotope
+# Cu-66
+# Fe-55
+# Ho-163
+# Co-57
+# Co-60
+# Tl-208
+# Pb-210
+# Pb-212
+# Pb-214
+# Bi-210
+# Bi-214
+# K-40
+# Tl-208
+# Ra-226
+
+# Generate a particle
+/run/beamOn 250000

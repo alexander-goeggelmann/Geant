@@ -1,0 +1,46 @@
+/// \file ECHo_PrimaryGeneratorAction.hh
+/// \brief Definition of the ECHo_PrimaryGeneratorAction class
+
+#ifndef ECHo_PrimaryGeneratorAction_h
+#define ECHo_PrimaryGeneratorAction_h 1
+
+#include <G4VUserPrimaryGeneratorAction.hh>
+#include <G4ParticleGun.hh>
+#include <globals.hh>
+#include <G4Box.hh>
+#include "../../Detector/include/ECHo_DetectorConstruction.hh"
+
+class G4ParticleGun;
+class G4Event;
+class G4Box;
+
+class ECHo_PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
+{
+    public:
+        ECHo_PrimaryGeneratorAction(ECHo_DetectorConstruction*);
+        virtual ~ECHo_PrimaryGeneratorAction();
+
+        virtual void GeneratePrimaries(G4Event*);
+
+        const G4ParticleGun* GetParticleGun() const {return fParticleGun;}
+        G4String GetSetUp() const {return fDetector->GetSetUp();}
+
+        void SelectVolume(G4String);
+        void SetA(G4int a) {ionA = a;}
+        void SetZ(G4int z) {ionZ = z;}
+        void SelectContamination(G4String);
+        void SelectMuon(G4bool b) {muon = b;}
+
+     private:
+        G4ParticleGun* fParticleGun;
+        G4UImessenger *fPrimMessenger;
+        ECHo_DetectorConstruction* fDetector;
+        G4ThreeVector position;
+        G4ThreeVector halfLength;
+        G4int ionZ;
+        G4int ionA;
+        G4bool contamination;
+        G4bool muon;
+};
+
+#endif

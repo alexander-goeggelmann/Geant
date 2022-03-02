@@ -1,0 +1,18 @@
+x_seed = 1
+y_seed = 1
+
+save_prims = true
+
+muon = true
+
+# contamination = Surface
+# contamination = Bulk
+
+# nuclide = Th-232
+# nuclide = K-40
+# nuclide = U-238
+
+# volume = h_Shielding
+volume = 5_Wafer
+# volume = 0_Absorber_A0
+# volume = b_Copper_A

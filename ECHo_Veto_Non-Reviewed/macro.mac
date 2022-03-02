@@ -1,0 +1,88 @@
+
+#/run/numberOfThreads 4
+
+# Initialize kernel
+# Setup
+/detector/setup Veto
+/run/initialize
+/random/setSeeds {xSeed} {ySeed}
+/seed/x {xSeed}
+/seed/y {ySeed}
+
+# Debug modus
+/debug/step false
+/debug/primary true
+
+# Contamination type
+/primary/muon false
+/primary/contamination Surface
+
+/primary/a 210
+/primary/z 82
+
+# Position of the contamination
+/primary/volume Absorber_A0
+
+# Isotope
+# Cu-66
+#/primary/a 66
+#/primary/z 29
+
+# Fe-55
+#/primary/a 55
+#/primary/z 26
+
+# Ho-163
+#/primary/a 163
+#/primary/z 67
+
+# Co-57
+#/primary/a 57
+#/primary/z 27
+# Co-60
+#/primary/a 60
+#/primary/z 27
+
+# Tl-208
+#/primary/a 208
+#/primary/z 81
+
+# Pb-210
+#/primary/a 210
+#/primary/z 82
+# Pb-212
+#/primary/a 212
+#/primary/z 82
+# Pb-214
+#/primary/a 214
+#/primary/z 82
+
+# Bi-210
+#/primary/a 210
+#/primary/z 83
+# Bi-214
+#/primary/a 214
+#/primary/z 83
+
+# K-40
+#/primary/a 40
+#/primary/z 19
+
+# Tl-208
+#/primary/a 208
+#/primary/z 81
+
+# Ra-226
+#/primary/a 226
+#/primary/z 88
+
+# Generate a particle
+#/run/setCut 4000 nanometer
+/run/beamOn 100000
+
+
+#/vis/drawVolume
+#/vis/scene/endOfEventAction accumulate
+#/vis/viewer/set/background gray
+#/vis/viewer/set/autoRefresh true
+#/vis/open OGL

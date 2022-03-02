@@ -1,0 +1,299 @@
+#include "../include/ECHo_VetoSetUp.hh"
+#include <G4SystemOfUnits.hh>
+#include <G4Element.hh>
+#include <G4Material.hh>
+#include <G4VSolid.hh>
+#include <G4Box.hh>
+#include <G4Sphere.hh>
+#include <G4LogicalVolume.hh>
+#include <G4VPhysicalVolume.hh>
+#include <G4PVPlacement.hh>
+#include <G4UserLimits.hh>
+#include <G4Color.hh>
+#include <G4VisAttributes.hh>
+
+using namespace CLHEP;
+
+// Initialization
+ECHo_VetoSetUp::ECHo_VetoSetUp()
+    : G4VUserDetectorConstruction()
+{}
+
+ECHo_VetoSetUp::~ECHo_VetoSetUp()
+{}
+
+G4VPhysicalVolume *ECHo_VetoSetUp::Construct()
+{
+    ECHo_DetectorConst& detector_const = get_DetectorConst();
+    detector_const.setVectors();
+
+    G4Element *Ag = new G4Element("Silver", "Ag", z_Silver, moleweight_Silver);
+    G4Element *Er = new G4Element("Erbium", "Er", z_Erbium, moleweight_Erbium);
+
+    G4Material *Gold = new G4Material(
+      "Gold", z_Gold, moleweight_Gold, density_Gold);
+    G4Material *Holmium = new G4Material(
+      "Holmium", z_Holmium, moleweight_Holmium, density_Holmium);
+    G4Material *Silicon = new G4Material(
+      "Silicon", z_Silicon, moleweight_Silicon, density_Silicon);
+    G4Material *SilverErbium = new G4Material("Ag:Er", density_Gold, 2);
+    SilverErbium->AddElement(Ag, fraction_Silver);
+    SilverErbium->AddElement(Er, fraction_Erbium);
+
+    G4Material *Vacuum = new G4Material(
+      "Vacuum", z_Vacuum, moleweight_Vacuum, density_Vacuum, kStateGas,
+      temperature_Vacuum, preasure_Vacuum);
+    G4Material *Iron = new G4Material(
+      "Iron", z_Iron, moleweight_Iron, density_Iron);
+    G4Material *Plastic = new G4Material(
+      "Plastic", z_Plastic, moleweight_Plastic, density_Plastic);
+
+    G4VSolid *SolidAbsorber = new G4Box(
+      name_Absorber, x_half_Absorber, y_half_Absorber, z_half_Absorber);
+    G4VSolid *SolidHolmium = new G4Box(
+      name_Holmium, x_half_Holmium, y_half_Holmium, z_half_Holmium);
+    G4VSolid *SolidSensor = new G4Box(
+      name_Sensor, x_half_Sensor, y_half_Sensor, z_half_Sensor);
+    G4VSolid *SolidMMC = new G4Box(
+      name_MMC, x_half_MMC, y_half_MMC, z_half_MMC);
+
+    G4VSolid *SolidWafer = new G4Box(
+      name_Wafer, x_half_Wafer, y_half_Wafer, z_half_Wafer);
+    G4VSolid *SolidBath = new G4Box(
+      name_Bath, x_half_Bath, y_half_Bath, z_half_Bath);
+    G4VSolid *SolidMuMUX = new G4Box(
+      name_muMUX, x_half_muMUX, y_half_muMUX, z_half_muMUX);
+    G4VSolid *SolidSource = new G4Box(
+      name_Source, x_half_Source, y_half_Source, z_half_Source);
+    G4VSolid *SolidMuonPanel_front_back = new G4Box(
+      name_MuonPanel, x_half_Panel_front_back, y_half_Panel_front_back,
+      z_half_Panel_front_back);
+    G4VSolid *SolidMuonPanel_left_right = new G4Box(
+      name_MuonPanel, x_half_Panel_left_right, y_half_Panel_left_right,
+      z_half_Panel_left_right);
+    G4VSolid *SolidMuonPanel_top = new G4Box(
+      name_MuonPanel, x_half_Panel_top, y_half_Panel_top, z_half_Panel_top);
+    G4VSolid *SolidMuonPanel_bottom = new G4Box(
+      name_MuonPanel, x_half_Panel_bottom, y_half_Panel_bottom,
+      z_half_Panel_bottom);
+
+    G4VSolid *SolidVeto = new G4Box(
+      name_SetUp, x_half_Veto, y_half_Veto, z_half_Veto);
+    G4VSolid *SolidSphere = new G4Sphere(
+        "World", 5. * CLHEP::m, 5.5 * CLHEP::m, 0.,
+        CLHEP::twopi, 0., CLHEP::pi);
+
+    G4VisAttributes *grey = new G4VisAttributes(G4Color::Grey());
+    grey->SetVisibility(true);
+    grey->SetForceSolid(true);
+
+    G4VisAttributes *yellow0 = new G4VisAttributes(G4Color::Yellow());
+    yellow0->SetVisibility(true);
+    yellow0->SetForceWireframe(true);
+
+    G4VisAttributes *yellow1 = new G4VisAttributes(G4Color::Yellow());
+    yellow1->SetVisibility(true);
+    yellow1->SetForceSolid(true);
+
+    G4VisAttributes *white = new G4VisAttributes(G4Color::White());
+    white->SetVisibility(true);
+    white->SetForceSolid(true);
+
+    G4VisAttributes *red = new G4VisAttributes(G4Color::Red());
+    red->SetVisibility(true);
+    red->SetForceSolid(true);
+
+    G4LogicalVolume *LogicWafer = new G4LogicalVolume(
+      SolidWafer, Silicon, name_Wafer);
+    LogicWafer->SetVisAttributes(grey);
+    G4LogicalVolume *LogicBath = new G4LogicalVolume(
+      SolidBath, Gold, name_Bath);
+    LogicBath->SetVisAttributes(yellow1);
+    G4LogicalVolume *LogicMuMUX = new G4LogicalVolume(
+      SolidMuMUX, Vacuum, name_muMUX);
+    G4LogicalVolume *LogicSource = new G4LogicalVolume(
+      SolidSource, Iron, name_Source);
+    G4LogicalVolume *AbsorberVolumes[number_of_pixels];
+    G4LogicalVolume *SensorVolumes[number_of_pixels];
+    G4LogicalVolume *HolmiumVolumes[number_of_pixels];
+    G4LogicalVolume *MMCVolumes[number_of_pixels];
+
+    G4LogicalVolume *PanelsFrontVolume[4];
+    G4LogicalVolume *PanelsBackVolume[4];
+    G4LogicalVolume *PanelsLeftVolume[4];
+    G4LogicalVolume *PanelsRightVolume[4];
+    G4LogicalVolume *PanelsTopVolume[4];
+    G4LogicalVolume *PanelsBottomVolume[4];
+
+    G4LogicalVolume *LogicVeto = new G4LogicalVolume(
+      SolidVeto, Vacuum, name_SetUp);
+    G4LogicalVolume *LogicSphere = new G4LogicalVolume(
+        SolidSphere, Vacuum, "World");
+
+    G4UserLimits *abLimit = new G4UserLimits();
+    abLimit->SetUserMinEkine(min_E_kin_MMC);
+    abLimit->SetMaxAllowedStep(max_step_MMC);
+
+    G4UserLimits *limitMuMUX = new G4UserLimits();
+    limitMuMUX->SetUserMinEkine(min_E_kin_MuMUX);
+    limitMuMUX->SetMaxAllowedStep(max_step_MuMUX);
+
+    LogicMuMUX->SetUserLimits(limitMuMUX);
+    LogicBath->SetUserLimits(limitMuMUX);
+    LogicWafer->SetUserLimits(limitMuMUX);
+
+    G4VPhysicalVolume *PhysVeto = new G4PVPlacement(
+        0, origin, LogicSphere, "Wolrd", 0, false, 0, false);
+    new G4PVPlacement(
+      0, origin, LogicVeto, name_SetUp, LogicSphere, false, 0, false);
+
+    for (int i = 0; i < 4; i++)
+    {
+      G4String number = "A";
+      switch (i)
+      {
+        case 1:
+          number = "B";
+          break;
+        case 2:
+          number = "C";
+          break;
+        case 3:
+          number = "D";
+          break;
+        default:
+          number = "A";
+      }
+      G4double sign = 1.;
+      if (i > 1)
+      {
+        sign = -1.;
+      }
+      G4double mult = 0.;
+      if ((i == 1) or (i == 3))
+      {
+        mult = 1.;
+      }
+      PanelsFrontVolume[i] = new G4LogicalVolume(
+        SolidMuonPanel_front_back, Plastic, "Front_" + number);
+      PanelsBackVolume[i] = new G4LogicalVolume(
+        SolidMuonPanel_front_back, Plastic, "Back_" + number);
+      PanelsLeftVolume[i] = new G4LogicalVolume(
+        SolidMuonPanel_left_right, Plastic, "Left_" + number);
+      PanelsRightVolume[i] = new G4LogicalVolume(
+        SolidMuonPanel_left_right, Plastic, "Right_" + number);
+      PanelsTopVolume[i] = new G4LogicalVolume(
+        SolidMuonPanel_top, Plastic, "Top_" + number);
+      PanelsBottomVolume[i] = new G4LogicalVolume(
+        SolidMuonPanel_bottom, Plastic, "Bottom_" + number);
+
+      new G4PVPlacement(
+        0, G4ThreeVector(
+          4. * y_half_Panel_front_back + (1. + 0.5 + 0.5) * CLHEP::cm +
+            x_half_Panel_front_back,
+          sign * (0.5 * CLHEP::cm + y_half_Panel_front_back) +
+            2. * sign * mult * y_half_Panel_front_back +
+            sign * mult * CLHEP::cm, 0.0),
+        PanelsFrontVolume[i], PanelsFrontVolume[i]->GetName(), LogicVeto,
+        false, 0, false);
+      new G4PVPlacement(
+        0, G4ThreeVector(
+          -4. * y_half_Panel_front_back - (1. + 0.5 + 0.5) * CLHEP::cm -
+            x_half_Panel_front_back,
+          sign * (0.5 * CLHEP::cm + y_half_Panel_front_back) +
+            2. * sign * mult * y_half_Panel_front_back +
+            sign * mult * CLHEP::cm, 0.0),
+        PanelsBackVolume[i], PanelsBackVolume[i]->GetName(), LogicVeto,
+        false, 0, false);
+      new G4PVPlacement(
+        0, G4ThreeVector(
+          sign * (0.5 * CLHEP::cm + y_half_Panel_front_back) +
+            2. * sign * mult * y_half_Panel_front_back +
+            sign * mult * CLHEP::cm,
+          4. * y_half_Panel_front_back + (1. + 0.5 + 0.5) * CLHEP::cm +
+            x_half_Panel_front_back, 0.0),
+        PanelsLeftVolume[i], PanelsLeftVolume[i]->GetName(), LogicVeto,
+        false, 0, false);
+      new G4PVPlacement(
+        0, G4ThreeVector(
+          sign * (0.5 * CLHEP::cm + y_half_Panel_front_back) +
+            2. * sign * mult * y_half_Panel_front_back +
+            sign * mult * CLHEP::cm,
+          -4. * y_half_Panel_front_back - (1. + 0.5 + 0.5) * CLHEP::cm -
+            x_half_Panel_front_back, 0.0),
+        PanelsRightVolume[i], PanelsRightVolume[i]->GetName(), LogicVeto,
+        false, 0, false);
+      new G4PVPlacement(
+        0, G4ThreeVector(
+          83. *  CLHEP::cm - z_half_Panel_front_back,
+          sign * (0.5 * CLHEP::cm + y_half_Panel_front_back) +
+            2. * sign * mult * y_half_Panel_front_back +
+            sign * mult * CLHEP::cm,
+          -z_half_Panel_front_back - x_half_Panel_front_back - 0.1 * CLHEP::cm),
+        PanelsTopVolume[i], PanelsTopVolume[i]->GetName(), LogicVeto,
+        false, 0, false);
+      new G4PVPlacement(
+        0, G4ThreeVector(
+          sign * (0.5 * CLHEP::cm + y_half_Panel_front_back) +
+            2. * sign * mult * y_half_Panel_front_back +
+            sign * mult * CLHEP::cm,
+          83. *  CLHEP::cm - z_half_Panel_front_back,
+          -z_half_Panel_front_back - 3. * x_half_Panel_front_back - 0.2 * CLHEP::cm),
+        PanelsBottomVolume[i], PanelsBottomVolume[i]->GetName(), LogicVeto,
+        false, 0, false);
+    }
+
+    new G4PVPlacement(
+      0, position_MuMUXInVeto, LogicMuMUX, name_muMUX,
+      LogicVeto, false, 0, false);
+    new G4PVPlacement(
+      0, position_BathInMuMUX, LogicBath, name_Bath,
+      LogicMuMUX, false, 0, false);
+    new G4PVPlacement(
+      0, position_WaferInMuMUX, LogicWafer, name_Wafer,
+      LogicMuMUX, false, 0, false);
+    new G4PVPlacement(
+      0, position_SourceInMuMUX, LogicSource, name_Source,
+      LogicMuMUX, false, 0, false);
+
+    G4ThreeVector position_MMCInMuMUX;
+
+    for (int i = 0; i < number_of_pixels; i++)
+    {
+        AbsorberVolumes[i] = new G4LogicalVolume(SolidAbsorber, Gold,
+                                  detector_const.vector_names_Absorber[i]);
+        AbsorberVolumes[i]->SetVisAttributes(yellow0);
+        AbsorberVolumes[i]->SetUserLimits(abLimit);
+
+        SensorVolumes[i] = new G4LogicalVolume(SolidSensor, SilverErbium,
+                                detector_const.vector_names_Sensor[i]);
+        SensorVolumes[i]->SetVisAttributes(red);
+        SensorVolumes[i]->SetUserLimits(abLimit);
+
+        HolmiumVolumes[i] = new G4LogicalVolume(SolidHolmium, Holmium,
+                                  detector_const.vector_names_Holmium[i]);
+        HolmiumVolumes[i]->SetVisAttributes(white);
+        HolmiumVolumes[i]->SetUserLimits(abLimit);
+        MMCVolumes[i] = new G4LogicalVolume(SolidMMC, Vacuum,
+                              detector_const.vector_names_MMC[i]);
+        MMCVolumes[i]->SetUserLimits(abLimit);
+
+        position_MMCInMuMUX =
+          G4ThreeVector(detector_const.vector_position_x_MMCInMuMUX[i],
+                        detector_const.vector_position_y_MMCInMuMUX[i],
+                        detector_const.vector_position_z_MMCInMuMUX[i]);
+        new G4PVPlacement(0, position_MMCInMuMUX, MMCVolumes[i],
+                      MMCVolumes[i]->GetName(), LogicMuMUX, false, 0, false);
+        new G4PVPlacement(0, position_AbsorberInMMC, AbsorberVolumes[i],
+                          AbsorberVolumes[i]->GetName(), MMCVolumes[i],
+                          false, 0, false);
+        new G4PVPlacement(0, position_HolmiumInAbsorber, HolmiumVolumes[i],
+                          HolmiumVolumes[i]->GetName(), AbsorberVolumes[i],
+                          false, 0, false);
+        new G4PVPlacement(0, position_SensorInMMC, SensorVolumes[i],
+                          SensorVolumes[i]->GetName(), MMCVolumes[i],
+                          false, 0, false);
+    }
+
+    return PhysVeto;
+}

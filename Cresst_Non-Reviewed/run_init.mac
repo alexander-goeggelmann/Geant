@@ -1,0 +1,3 @@
+/detector/setup Veto
+/run/initialize
+/control/execute {file}

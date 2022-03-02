@@ -1,0 +1,50 @@
+/run/initialize
+#/control/alias xSeed 10
+#/control/alias ySeed 10
+
+
+/random/setSeeds {xSeed} {ySeed}
+#/seed/x {xSeed}
+#/seed/y {ySeed}
+
+#/save/primary false
+
+# Contamination type
+#/primary/muon false
+#/primary/contamination Bulk
+
+# Position of the contamination
+#/primary/volume Absorber_A0
+
+# Isotope
+# Cu-66
+# Fe-55
+# Ho-163
+# Co-57
+# Co-60
+# Tl-208
+# Pb-210
+# Pb-212
+# Pb-214
+# Bi-210
+# Bi-214
+#/primary/nuclide K-40
+# Tl-208
+# Ra-226
+#/primary/nuclide U-238
+#/primary/nuclide Th-232
+
+# Generate a particle
+/run/beamOn 100000
+
+
+#/vis/open OGL
+#/vis/drawVolume
+#/vis/scene/add/trajectories smooth
+#/vis/modeling/trajectories/create/drawByCharge
+#/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
+#/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+#/vis/scene/add/hits
+#/vis/scene/endOfEventAction accumulate
+#/vis/viewer/set/background gray
+#/vis/viewer/set/autoRefresh true

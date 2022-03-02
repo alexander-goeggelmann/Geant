@@ -1,0 +1,120 @@
+/vis/disable
+# Change the default number of threads (in multi-threaded mode)
+/run/numberOfThreads 1
+
+# Initialize kernel
+# Setup
+/detector/setup Veto
+/run/initialize
+/random/setSeeds 10 10
+/seed/x 10
+/seed/y 10
+
+# Debug modus
+/debug/step false
+/debug/primary true
+
+# Contamination type
+/primary/muon false
+/primary/contamination Surface
+
+# Position of the contamination
+/primary/volume Absorber_A0
+
+# Isotope
+# Cu-66
+#/primary/a 66
+#/primary/z 29
+
+# Fe-55
+#/primary/a 55
+#/primary/z 26
+
+# Ho-163
+#/primary/a 163
+#/primary/z 67
+
+# Co-57
+#/primary/a 57
+#/primary/z 27
+# Co-60
+#/primary/a 60
+#/primary/z 27
+
+# Tl-208
+#/primary/a 208
+#/primary/z 81
+
+# Pb-210
+/primary/a 210
+/primary/z 82
+# Pb-212
+#/primary/a 212
+#/primary/z 82
+# Pb-214
+#/primary/a 214
+#/primary/z 82
+
+# Bi-210
+#/primary/a 210
+#/primary/z 83
+# Bi-214
+#/primary/a 214
+#/primary/z 83
+
+# K-40
+#/primary/a 40
+#/primary/z 19
+
+# Tl-208
+#/primary/a 208
+#/primary/z 81
+
+# Ra-226
+#/primary/a 226
+#/primary/z 88
+
+# Generate a particle
+#/run/setCut 4000 nanometer
+/run/beamOn 1000
+
+
+# Disable auto refresh and quieten vis messages whilst scene and
+# trajectories are established:
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+#
+# Draw geometry:
+/vis/drawVolume
+#
+# Specify view angle:
+/vis/viewer/set/viewpointVector -1 0 0
+/vis/viewer/set/lightsVector -1 0 0
+
+# Draw smooth trajectories at end of event, showing trajectory points
+# as markers 2 pixels wide:
+/vis/scene/add/trajectories smooth
+/vis/modeling/trajectories/create/drawByCharge
+/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts false
+/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+
+# Draw hits at end of event:
+/vis/scene/add/hits
+
+# To superimpose all of the events from a given run:
+/vis/scene/endOfEventAction accumulate
+#
+# Decorations
+# Name
+/vis/set/textColour green
+/vis/set/textLayout right
+/vis/set/textLayout    # Revert to normal (left adjusted) layout
+/vis/set/textColour    # Revert to default text colour (blue)
+
+# Re-establish auto refreshing and verbosity:
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+
+/vis/open OGL
+/vis/viewer/set/background gray
+#/run/beamOn 1
